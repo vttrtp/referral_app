@@ -31,6 +31,9 @@ class ReferralUser(models.Model):
     level: ReferralLevelChoice = models.CharField(
         max_length=2, choices=LEVEL_CHOICES, default=ReferralLevelChoice.V1)
     deposit: float = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0)
+        max_digits=10, decimal_places=2, default=0.00)
     bonuses: float = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.0)
+        max_digits=10, decimal_places=2, default=0.00)
+
+    class Meta:
+        db_table = "referral_users"
