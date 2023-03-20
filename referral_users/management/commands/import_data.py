@@ -59,18 +59,22 @@ class Command(BaseCommand):
             """
             Prints progress of the current step.
             """
-            progress = int(cur_step / count * 100)
+            progress = int(cur_step / count * 100) + 1
             if progress == last_progress:
                 return progress
             progress_str = f"{step_name}...: [{'=' * int(progress / 5)}{' ' * (20 - int(progress / 5))}] {progress}%"
-            print(progress_str, end='\r')
+            end = '\r'
+            if progress == 100:
+                end='\n'
+            print(progress_str, end=end)
             return progress
 
         # calculate levels
         step_name = "Processing data"
         cur_step = 0
         last_progress = -1
-
+        users_to_save = []
+        levels_to_save = []
         # Process node
         def process_node(parent, node):
             """
@@ -79,21 +83,34 @@ class Command(BaseCommand):
             nonlocal cur_step, last_progress
 
             children = []
-            level = ReferralLevel.objects.create()
-
-            this = ReferralUser.objects.create(
+            level = ReferralLevel()
+            levels_to_save.append(level)
+            this = ReferralUser(
                 id=node['id'],
                 referrer=parent,
                 referral_level=level,
             )
+            users_to_save.append(this)
             last_progress = print_progress(
                 step_name, count, cur_step, last_progress)
             cur_step += 1
             for ref in node['refs']:
                 children.append(process_node(this, ref))
-            calculate_referrals_level(this)
-            this.referral_level.save()
+            calculate_referrals_level(this, level, children)
+            return this
+
+        # Iterate over users three to create users and compute their levels
         process_node(None, parent)
 
-        # process_node(None,parent)
-        self.stdout.write(self.style.SUCCESS('Data imported successfully                         '))
+        # Iterate over all users to top up balance
+        step_name = "Fill balance"
+        cur_step = 0
+        last_progress = -1
+        for user in users_to_save:
+            top_up_120_balance(user)
+            last_progress = print_progress(
+                step_name, count, cur_step, last_progress)
+            cur_step += 1
+        ReferralLevel.objects.bulk_create(levels_to_save)
+        ReferralUser.objects.bulk_create(users_to_save)
+        self.stdout.write(self.style.SUCCESS('Data imported successfully'))

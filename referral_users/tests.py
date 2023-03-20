@@ -60,9 +60,11 @@ class ReferralUserTest(TestCase):
             create_new_user(ReferralLevelChoice.V1, user3V1)
 
         calculate_referrals_level(user3V1)
+        user3V1.referral_level.save()
         calculate_referrals_level(user2V1)
+        user2V1.referral_level.save()
         calculate_referrals_level(user1V2)
-
+        user1V2.referral_level.save()
         # user1V2
         self.assertEqual(user1V2.referral_level.level, ReferralLevelChoice.V2)
         self.assertEqual(user1V2.referral_level.team_size, 23)

@@ -22,15 +22,17 @@ def reset_level(level: ReferralLevel) -> None:
     level.count_level5_refs = 0
 
 
-def calculate_referrals_level(user: ReferralUser) -> None:
+def calculate_referrals_level(user: ReferralUser, level : ReferralLevel = None, refs:  List[ReferralUser] = None) -> None:
     """
     Calculates the referral level for a given ReferralUser object based on the number of referrals they have
     and the referral levels of their referrals.
     """
-    level: ReferralLevel = user.referral_level
+    if not level:
+        level: ReferralLevel = user.referral_level
     reset_level(level)
 
-    refs: List[ReferralUser] = user.refs.all()
+    if not refs: 
+        refs: List[ReferralUser] = user.refs.all()
     for ref in refs:
         level.team_size += ref.referral_level.team_size + 1
         level.count_direct_refs += 1
@@ -62,7 +64,6 @@ def calculate_referrals_level(user: ReferralUser) -> None:
             level.count_direct_refs >= 3:
         level.level = ReferralLevelChoice.V2
 
-    level.save()
 
 
 def top_up_120_balance(user: ReferralUser) -> None:
@@ -82,8 +83,8 @@ def top_up_120_balance(user: ReferralUser) -> None:
                 ref.deposit += 40
             elif user.referrer.referral_level.level == ReferralLevelChoice.V1:
                 ref.deposit += 10
-        elif ref.referral_level.level >= 3 and user.referrer == ref \
-                and user.referral_level >= ref.referral_level:
+        elif ref.referral_level.level >= ReferralLevelChoice.V3 and user.referrer == ref \
+                and user.referral_level.level >= ref.referral_level.level:
             continue
         elif ref.referral_level.level == ReferralLevelChoice.V3:
             if user.referrer == ref:
