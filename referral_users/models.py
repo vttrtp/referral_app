@@ -1,7 +1,6 @@
 from django.db import models
 
 from enum import Enum
-import secrets
 
 
 class ReferralLevelChoice(models.TextChoices):
@@ -41,7 +40,7 @@ class ReferralUser(models.Model):
 
     # Override the default ID field with a CharField
     id: str = models.CharField(
-        primary_key=True, unique=True, max_length=26, default=secrets.token_hex(13).upper)
+        primary_key=True, unique=True, max_length=26)
     referrer: "ReferralUser" = models.ForeignKey(
         'self', null=True, blank=True, on_delete=models.SET_NULL, related_name='refs')
     referral_level: ReferralLevel = models.ForeignKey(
