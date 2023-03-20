@@ -34,16 +34,51 @@ class ReferralUserTest(TestCase):
         top_up_120_balance(user3V1)
 
         # deposit for user1V2
-        # 120 + 40 + 10 = 170
-        self.assertEqual(user1V2.deposit, 170)
+        # deposit = 120 + 40 + 10
+        self.assertEqual(user1V2.deposit, 120)
+        self.assertEqual(user1V2.bonuses, 50)
 
         # deposit_for_user2V1
-        # 120 + 10 = 130
-        self.assertEqual(user2V1.deposit, 130)
+        # 120 + 10 - 40
+        self.assertEqual(user2V1.deposit, 80)
+        self.assertEqual(user2V1.bonuses, 10)
 
         # deposit_for_user3V1
-        # 120
-        self.assertEqual(user3V1.deposit, 120)
+        # 120 - 20
+        self.assertEqual(user3V1.deposit, 100)
+        self.assertEqual(user3V1.bonuses, 0)
+
+    def test_top_up_balance_2(self):
+        """
+        Test top_up_balance function for 5 ReferralUser objects at different levels.
+        """
+        user1 = create_new_user(ReferralLevelChoice.V4, None)
+        user2 = create_new_user(ReferralLevelChoice.V3, user1)
+        user3 = create_new_user(ReferralLevelChoice.V2, user2)
+        user4 = create_new_user(ReferralLevelChoice.V1, user3)
+        user5 = create_new_user(ReferralLevelChoice.V2, user2)
+
+        top_up_120_balance(user1)
+        top_up_120_balance(user2)
+        top_up_120_balance(user3)
+        top_up_120_balance(user4)
+        top_up_120_balance(user5)
+
+        # user1 = 120 + 60 + 10 * 2
+        self.assertEqual(user1.deposit, 120)
+        self.assertEqual(user1.bonuses, 80)
+
+        # user2 = 120 + 50 * 2 + 10 - 60
+        self.assertEqual(user2.deposit, 60)
+        self.assertEqual(user2.bonuses, 110)
+
+        # user3 = 120 + 40 - 50 - 10
+        self.assertEqual(user3.deposit, 60)
+        self.assertEqual(user3.bonuses, 40)
+
+        # user4  = 120 -40 -10
+        self.assertEqual(user4.deposit, 70)
+        self.assertEqual(user4.bonuses, 0)
 
     def test_calculate_referrals_level(self):
         """

@@ -46,4 +46,6 @@ class ReferralUser(models.Model):
     referral_level: ReferralLevel = models.ForeignKey(
         ReferralLevel, on_delete=models.CASCADE, default=1)
     deposit: float = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0.00)
+        max_digits=10, decimal_places=2, default=0.0)
+    bonuses: float = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.0)

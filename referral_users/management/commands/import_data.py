@@ -12,7 +12,7 @@ class Command(BaseCommand):
     """
     Django command to import data from a JSON file into the ReferralUser and ReferralLevel models in the database.
     """
-    
+
     help = 'Import data from a JSON file into the database'
 
     def add_arguments(self, parser):
@@ -65,7 +65,7 @@ class Command(BaseCommand):
             progress_str = f"{step_name}...: [{'=' * int(progress / 5)}{' ' * (20 - int(progress / 5))}] {progress}%"
             end = '\r'
             if progress == 100:
-                end='\n'
+                end = '\n'
             print(progress_str, end=end)
             return progress
 
@@ -76,6 +76,7 @@ class Command(BaseCommand):
         users_to_save = []
         levels_to_save = []
         # Process node
+
         def process_node(parent, node):
             """
             Recursively processes each node in the tree, creating ReferralUser and ReferralLevel objects as necessary.
@@ -113,4 +114,15 @@ class Command(BaseCommand):
             cur_step += 1
         ReferralLevel.objects.bulk_create(levels_to_save)
         ReferralUser.objects.bulk_create(users_to_save)
+        levels = [0, 0, 0, 0, 0]
+        for level in levels_to_save:
+            if level.level == ReferralLevelChoice.V1:
+                levels[0] += 1
+            if level.level == ReferralLevelChoice.V2:
+                levels[1] += 1
+            if level.level == ReferralLevelChoice.V3:
+                levels[2] += 1
+            if level.level == ReferralLevelChoice.V4:
+                levels[3] += 1
+        print(levels)
         self.stdout.write(self.style.SUCCESS('Data imported successfully'))
