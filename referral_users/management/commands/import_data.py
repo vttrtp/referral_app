@@ -3,7 +3,7 @@ Command to import data from a JSON file into the ReferralUser and ReferralLevel 
 """
 
 from django.core.management.base import BaseCommand, CommandError
-from referral_users.models import ReferralUser, ReferralLevel
+from referral_users.models import ReferralUser
 from referral_users.utils import *
 import json
 
@@ -34,7 +34,6 @@ class Command(BaseCommand):
             parent = json.load(file)
 
         ReferralUser.objects.all().delete()
-        ReferralLevel.objects.all().delete()
 
         def calculate_data_size(node):
             """
@@ -89,15 +88,16 @@ class Command(BaseCommand):
             this = ReferralUser(
                 id=node['id'],
                 referrer=parent,
-                referral_level=level,
             )
             users_to_save.append(this)
             last_progress = print_progress(
                 step_name, count, cur_step, last_progress)
             cur_step += 1
+            team_size = len(node['refs'])
             for ref in node['refs']:
                 children.append(process_node(this, ref))
-            calculate_referrals_level(this, level, children)
+                team_size += len(ref['refs'])
+            calculate_referrals_level(this, level, children, team_size)
             return this
 
         # Iterate over users three to create users and compute their levels
@@ -112,9 +112,10 @@ class Command(BaseCommand):
             last_progress = print_progress(
                 step_name, count, cur_step, last_progress)
             cur_step += 1
-        ReferralLevel.objects.bulk_create(levels_to_save)
+        
         ReferralUser.objects.bulk_create(users_to_save)
         levels = [0, 0, 0, 0, 0]
+        levels_sizes = []
         for level in levels_to_save:
             if level.level == ReferralLevelChoice.V1:
                 levels[0] += 1
@@ -124,5 +125,5 @@ class Command(BaseCommand):
                 levels[2] += 1
             if level.level == ReferralLevelChoice.V4:
                 levels[3] += 1
-        print(levels)
+            levels_sizes.append((level.team_size, level.count_direct_refs))
         self.stdout.write(self.style.SUCCESS('Data imported successfully'))

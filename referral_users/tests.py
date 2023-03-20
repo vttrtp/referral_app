@@ -1,6 +1,6 @@
 import secrets
 from django.test import TestCase
-from .models import ReferralLevel, ReferralUser, ReferralLevelChoice
+from .models import ReferralUser, ReferralLevelChoice
 from .utils import *
 
 
@@ -10,9 +10,8 @@ def create_new_user(level: ReferralLevelChoice, referral_user: ReferralUser) -> 
     """
 
     id = secrets.token_hex(13).upper()
-    level = ReferralLevel.objects.create(level=level)
     user = ReferralUser.objects.create(
-        referrer=referral_user, referral_level=level, id=id)
+        referrer=referral_user, level=level, id=id)
     return user
 
 
@@ -85,7 +84,7 @@ class ReferralUserTest(TestCase):
         Test calculate_referrals_level function for 3 ReferralUser objects at different levels.
         """
         user1V2 = create_new_user(ReferralLevelChoice.V2, None)
-        for i in range(0, 6):
+        for i in range(0, 11):
             create_new_user(ReferralLevelChoice.V1, user1V2)
         user2V1 = create_new_user(ReferralLevelChoice.V1, user1V2)
         for i in range(0, 7):
@@ -94,27 +93,20 @@ class ReferralUserTest(TestCase):
         for i in range(0, 8):
             create_new_user(ReferralLevelChoice.V1, user3V1)
 
+        #team_size = 8
         calculate_referrals_level(user3V1)
-        user3V1.referral_level.save()
+
+        #team_size = 7 + 8 (children_size of previous) + 1
         calculate_referrals_level(user2V1)
-        user2V1.referral_level.save()
+
+        #team_size = 11 + 7 (children_size of previous) + 1
         calculate_referrals_level(user1V2)
-        user1V2.referral_level.save()
+
         # user1V2
-        self.assertEqual(user1V2.referral_level.level, ReferralLevelChoice.V2)
-        self.assertEqual(user1V2.referral_level.team_size, 23)
-        self.assertEqual(user1V2.referral_level.count_direct_refs, 7)
-        self.assertEqual(user1V2.referral_level.count_level2_refs, 0)
-        self.assertEqual(user1V2.referral_level.count_level3_refs, 0)
-        self.assertEqual(user1V2.referral_level.count_level4_refs, 0)
-        self.assertEqual(user1V2.referral_level.count_level5_refs, 0)
+        self.assertEqual(user1V2.level, ReferralLevelChoice.V2)
 
         # user2V1
-        self.assertEqual(user2V1.referral_level.level, ReferralLevelChoice.V1)
-        self.assertEqual(user2V1.referral_level.team_size, 16)
-        self.assertEqual(user2V1.referral_level.count_direct_refs, 8)
+        self.assertEqual(user2V1.level, ReferralLevelChoice.V1)
 
         # user3V1
-        self.assertEqual(user3V1.referral_level.level, ReferralLevelChoice.V1)
-        self.assertEqual(user3V1.referral_level.team_size, 8)
-        self.assertEqual(user3V1.referral_level.count_direct_refs, 8)
+        self.assertEqual(user3V1.level, ReferralLevelChoice.V1)

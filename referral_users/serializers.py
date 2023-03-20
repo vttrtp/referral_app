@@ -1,15 +1,5 @@
 from rest_framework import serializers
-from .models import ReferralUser, ReferralLevel
-
-
-class ReferralLevelSerializer(serializers.ModelSerializer):
-    """
-    Serializer class for the ReferralLevel model.
-    """
-
-    class Meta:
-        model = ReferralLevel
-        fields = '__all__'
+from .models import ReferralUser
 
 
 class ReferralUserSerializer(serializers.ModelSerializer):
@@ -19,7 +9,6 @@ class ReferralUserSerializer(serializers.ModelSerializer):
     """
 
     refs = serializers.SerializerMethodField()
-    referral_level = ReferralLevelSerializer()
 
     class Meta:
         model = ReferralUser
@@ -31,4 +20,4 @@ class ReferralUserSerializer(serializers.ModelSerializer):
         """
         if obj.refs.exists():
             return list(obj.refs.values_list('id', flat=True))
-        return None
+        return []
