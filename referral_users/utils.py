@@ -2,48 +2,31 @@ from typing import List
 from .models import ReferralUser, ReferralLevelChoice
 
 
-class ReferralLevel():
+class ReferralLevelData():
     """
     Helper class for user level calculation
     """
-    level = ReferralLevelChoice.V1
+
     team_size = 0
     count_direct_refs = 0
     count_level2_refs = 0
-    count_level3_refs = 0
     count_level3_refs = 0
     count_level4_refs = 0
     count_level5_refs = 0
 
 
-def reset_level(level: ReferralLevel) -> None:
-    """
-    Resets the referral level data for a given ReferralLevel object.
-    """
-    level.level = ReferralLevelChoice.V1
-    level.team_size = 0
-    level.count_direct_refs = 0
-    level.count_level2_refs = 0
-    level.count_level3_refs = 0
-    level.count_level3_refs = 0
-    level.count_level4_refs = 0
-    level.count_level5_refs = 0
-
-
-def calculate_referrals_level(user: ReferralUser, level: ReferralLevel = None, refs:  List[ReferralUser] = None, team_size=-1) -> None:
+def calculate_referrals_level(user: ReferralUser, refs:  List[ReferralUser] = None, team_size: int = -1) -> None:
     """
     Calculates the referral level for a given ReferralUser object based on the number of referrals they have
     and the referral levels of their referrals.
     """
-    if not level:
-        level = ReferralLevel()
 
-    reset_level(level)
+    level = ReferralLevelData()
 
     if team_size != -1:
         level.team_size = team_size
 
-    if not refs:
+    if refs == None:
         refs: List[ReferralUser] = user.refs.all()
 
     for ref in refs:
@@ -62,24 +45,25 @@ def calculate_referrals_level(user: ReferralUser, level: ReferralLevel = None, r
     if level.team_size >= 1500 and \
        level.count_direct_refs >= 20 and \
        level.count_level5_refs >= 3:
-        level.level = ReferralLevelChoice.V6
+        user.level = ReferralLevelChoice.V6
     elif level.team_size >= 800 and \
             level.count_direct_refs >= 12 and \
             level.count_level4_refs >= 3:
-        level.level = ReferralLevelChoice.V5
+        user.level = ReferralLevelChoice.V5
     elif level.team_size >= 300 and \
             level.count_direct_refs >= 8 and \
             level.count_level3_refs >= 3:
-        level.level = ReferralLevelChoice.V4
+        user.level = ReferralLevelChoice.V4
     elif level.team_size >= 100 and \
             level.count_direct_refs >= 5 and \
             level.count_level2_refs >= 3:
-        level.level = ReferralLevelChoice.V3
+        user.level = ReferralLevelChoice.V3
     elif level.team_size >= 20 and \
             level.count_direct_refs >= 3:
-        level.level = ReferralLevelChoice.V2
+        user.level = ReferralLevelChoice.V2
+    else:
+        user.level = ReferralLevelChoice.V1
 
-    user.level = level.level
 
 
 def top_up_120_balance(user: ReferralUser) -> None:
@@ -151,6 +135,7 @@ def top_up_120_balance(user: ReferralUser) -> None:
                     spend_bonuses = 10
                 elif user.level == ReferralLevelChoice.V5:
                     spend_bonuses = 5
+                    
         ref.bonuses += spend_bonuses
         user.deposit -= spend_bonuses
         ref = ref.referrer

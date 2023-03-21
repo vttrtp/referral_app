@@ -1,5 +1,5 @@
 """
-Command to import data from a JSON file into the ReferralUser and ReferralLevel models in the database.
+Command to import data from a JSON file into the ReferralUser models in the database.
 """
 
 from django.core.management.base import BaseCommand, CommandError
@@ -10,7 +10,7 @@ import json
 
 class Command(BaseCommand):
     """
-    Django command to import data from a JSON file into the ReferralUser and ReferralLevel models in the database.
+    Django command to import data from a JSON file into the ReferralUser models in the database.
     """
 
     help = 'Import data from a JSON file into the database'
@@ -22,6 +22,32 @@ class Command(BaseCommand):
         parser.add_argument('file_path', type=str,
                             help='Path to the JSON file')
 
+    class ProgressPrinter():
+        """
+        Progress printer.
+        """
+        def __init__(self, step_name: str, step_count: int):
+            self.step_name = step_name
+            self.step_count = step_count
+            self.last_progress = -1
+            self.cur_step = 0
+            
+        def print_step_progress(self):
+            """
+            Print progress updates.
+            """
+            progress = int(self.cur_step / self.step_count * 100) + 1
+            last_progress = self.last_progress
+            self.last_progress = progress 
+            self.cur_step += 1
+            if progress == last_progress:
+                return
+            progress_str = f"{self.step_name}...: [{'=' * int(progress / 5)}{' ' * (20 - int(progress / 5))}] {progress}%"
+            end = '\r'
+            if progress == 100:
+                end = '\n'
+            print(progress_str, end=end)
+            
     def handle(self, *args, **options):
         """
         Handles the command.
@@ -52,78 +78,41 @@ class Command(BaseCommand):
             collect_children(node)
             return size
 
-        count = calculate_data_size(parent)
-
-        def print_progress(step_name, count, cur_step, last_progress):
-            """
-            Prints progress of the current step.
-            """
-            progress = int(cur_step / count * 100) + 1
-            if progress == last_progress:
-                return progress
-            progress_str = f"{step_name}...: [{'=' * int(progress / 5)}{' ' * (20 - int(progress / 5))}] {progress}%"
-            end = '\r'
-            if progress == 100:
-                end = '\n'
-            print(progress_str, end=end)
-            return progress
+        step_count = calculate_data_size(parent)
 
         # calculate levels
-        step_name = "Processing data"
-        cur_step = 0
-        last_progress = -1
+        printer = self.ProgressPrinter("Processing data",step_count)
+
         users_to_save = []
-        levels_to_save = []
-        # Process node
 
         def process_node(parent, node):
             """
-            Recursively processes each node in the tree, creating ReferralUser and ReferralLevel objects as necessary.
+            Recursively processes each node in the tree, creating ReferralUser objects
             """
-            nonlocal cur_step, last_progress
-
             children = []
-            level = ReferralLevel()
-            levels_to_save.append(level)
             this = ReferralUser(
                 id=node['id'],
                 referrer=parent,
             )
             users_to_save.append(this)
-            last_progress = print_progress(
-                step_name, count, cur_step, last_progress)
-            cur_step += 1
+            printer.print_step_progress()
             team_size = len(node['refs'])
             for ref in node['refs']:
                 children.append(process_node(this, ref))
                 team_size += len(ref['refs'])
-            calculate_referrals_level(this, level, children, team_size)
+            calculate_referrals_level(this, children, team_size)
             return this
 
         # Iterate over users three to create users and compute their levels
         process_node(None, parent)
 
         # Iterate over all users to top up balance
-        step_name = "Fill balance"
-        cur_step = 0
-        last_progress = -1
+        printer = self.ProgressPrinter("Fill balance",step_count)
+
         for user in users_to_save:
             top_up_120_balance(user)
-            last_progress = print_progress(
-                step_name, count, cur_step, last_progress)
-            cur_step += 1
+            printer.print_step_progress()
         
         ReferralUser.objects.bulk_create(users_to_save)
-        levels = [0, 0, 0, 0, 0]
-        levels_sizes = []
-        for level in levels_to_save:
-            if level.level == ReferralLevelChoice.V1:
-                levels[0] += 1
-            if level.level == ReferralLevelChoice.V2:
-                levels[1] += 1
-            if level.level == ReferralLevelChoice.V3:
-                levels[2] += 1
-            if level.level == ReferralLevelChoice.V4:
-                levels[3] += 1
-            levels_sizes.append((level.team_size, level.count_direct_refs))
+
         self.stdout.write(self.style.SUCCESS('Data imported successfully'))
