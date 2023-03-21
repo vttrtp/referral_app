@@ -65,13 +65,13 @@ def calculate_referrals_level(user: ReferralUser, refs:  List[ReferralUser] = No
         user.level = ReferralLevelChoice.V1
 
 
-
 def top_up_120_balance(user: ReferralUser) -> None:
     """
     Tops up the deposit balance of a given ReferralUser object by 120, and then distributes referral bonuses
     to the user's referrers based on their referral levels.
     """
     ref: ReferralUser = user.referrer
+    child = user
     user.deposit += 120
 
     for i in range(0, 2):
@@ -87,10 +87,9 @@ def top_up_120_balance(user: ReferralUser) -> None:
                 spend_bonuses = 40
             elif user.referrer.level == ReferralLevelChoice.V1:
                 spend_bonuses = 10
-        elif ref.level >= ReferralLevelChoice.V3 and user.referrer == ref \
-                and user.level >= ref.level:
-            ref = ref.referrer
-            continue
+        elif ref.level >= ReferralLevelChoice.V3 \
+                and child.level >= ref.level:
+            pass
         elif ref.level == ReferralLevelChoice.V3:
             if user.referrer == ref:
                 spend_bonuses = 50
@@ -113,29 +112,30 @@ def top_up_120_balance(user: ReferralUser) -> None:
             if user.referrer == ref:
                 spend_bonuses = 65
             else:
-                if user.level == ReferralLevelChoice.V1:
+                if user.referrer.level == ReferralLevelChoice.V1:
                     spend_bonuses = 35
-                elif user.level == ReferralLevelChoice.V2:
+                elif user.referrer.level == ReferralLevelChoice.V2:
                     spend_bonuses = 25
-                elif user.level == ReferralLevelChoice.V3:
+                elif user.referrer.level == ReferralLevelChoice.V3:
                     spend_bonuses = 15
-                elif user.level == ReferralLevelChoice.V4:
+                elif user.referrer.level == ReferralLevelChoice.V4:
                     spend_bonuses = 10
         elif ref.level == ReferralLevelChoice.V6:
             if user.referrer == ref:
                 spend_bonuses = 70
             else:
-                if user.level == ReferralLevelChoice.V1:
+                if user.referrer.level == ReferralLevelChoice.V1:
                     spend_bonuses = 40
-                elif user.level == ReferralLevelChoice.V2:
+                elif user.referrer.level == ReferralLevelChoice.V2:
                     spend_bonuses = 30
-                elif user.level == ReferralLevelChoice.V3:
+                elif user.referrer.level == ReferralLevelChoice.V3:
                     spend_bonuses = 20
-                elif user.level == ReferralLevelChoice.V4:
+                elif user.referrer.level == ReferralLevelChoice.V4:
                     spend_bonuses = 10
-                elif user.level == ReferralLevelChoice.V5:
+                elif user.referrer.level == ReferralLevelChoice.V5:
                     spend_bonuses = 5
-                    
+
         ref.bonuses += spend_bonuses
         user.deposit -= spend_bonuses
+        child = ref
         ref = ref.referrer
