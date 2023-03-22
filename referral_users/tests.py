@@ -79,6 +79,48 @@ class ReferralUserTest(TestCase):
         self.assertEqual(user4.deposit, 70)
         self.assertEqual(user4.bonuses, 0)
 
+    def test_top_up_balance_high_whole_chain(self):
+        """
+        Test top_up_balance function for chain of all level users.
+        """
+        user1 = create_new_user(ReferralLevelChoice.V6, None)
+        user2 = create_new_user(ReferralLevelChoice.V5, user1)
+        user3 = create_new_user(ReferralLevelChoice.V4, user2)
+        user4 = create_new_user(ReferralLevelChoice.V3, user3)
+        user5 = create_new_user(ReferralLevelChoice.V2, user4)
+        user6 = create_new_user(ReferralLevelChoice.V1, user5)
+
+        top_up_120_balance(user1)
+        top_up_120_balance(user2)
+        top_up_120_balance(user3)
+        top_up_120_balance(user4)
+        top_up_120_balance(user5)
+        top_up_120_balance(user6)
+
+        # V6 120 + 70 + 5
+        self.assertEqual(user1.deposit, 120)
+        self.assertEqual(user1.bonuses, 75)
+
+        # V5 120 + 65 + 5 -70
+        self.assertEqual(user2.deposit, 50)
+        self.assertEqual(user2.bonuses, 70)
+
+        # V4 120 + 60 + 10 -65
+        self.assertEqual(user3.deposit, 50)
+        self.assertEqual(user3.bonuses, 70)
+
+        # V3 120 +50 +10 -60 -5
+        self.assertEqual(user4.deposit, 55)
+        self.assertEqual(user4.bonuses, 60)
+
+        # V2 120 -50 -10 +40
+        self.assertEqual(user5.deposit, 60)
+        self.assertEqual(user5.bonuses, 40)
+
+        # V1 120 -40 -10
+        self.assertEqual(user6.deposit, 70)
+        self.assertEqual(user6.bonuses, 0)
+
     def test_top_up_balance_high_level(self):
         """
         Test top_up_balance function for hight level users.

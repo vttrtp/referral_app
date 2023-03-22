@@ -119,7 +119,7 @@ def top_up_120_balance(user: ReferralUser) -> None:
                 elif user.referrer.level == ReferralLevelChoice.V3:
                     spend_bonuses = 15
                 elif user.referrer.level == ReferralLevelChoice.V4:
-                    spend_bonuses = 10
+                    spend_bonuses = 5
         elif ref.level == ReferralLevelChoice.V6:
             if user.referrer == ref:
                 spend_bonuses = 70
